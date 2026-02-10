@@ -185,8 +185,8 @@ GEM
       logger (>= 1.7.0)
       rack (>= 3.2.0)
       redis-client (>= 0.26.0)
-    skyltmax_config (0.0.11)
-      rubocop (>= 1.81.0, < 2)
+    skyltmax_config (0.0.14)
+      rubocop (>= 1.81.0, < 2, < 1.84.1)
       rubocop-performance (>= 1.26.0, < 2)
       rubocop-rails (>= 2.33.0, < 3)
     stringio (3.2.0)
@@ -289,7 +289,7 @@ CHECKSUMS
   ruby-progressbar (1.13.0) sha256=80fc9c47a9b640d6834e0dc7b3c94c9df37f08cb072b7761e4a71e22cff29b33
   securerandom (0.4.1) sha256=cc5193d414a4341b6e225f0cb4446aceca8e50d5e1888743fac16987638ea0b1
   sidekiq (8.1.0) sha256=6bde5eaee9e4d7b1121e97ebd585273627fb32b1f870a47893723572479ad1e4
-  skyltmax_config (0.0.11) sha256=3b3bebbaf0247aadf044256464e45e565849045e94a6d59ac8dddb186da9bf56
+  skyltmax_config (0.0.14) sha256=fe28038e56ae3e89f7f439df86cf8d13ab03cc375128cd83d6534a0bf913c36f
   stringio (3.2.0) sha256=c37cb2e58b4ffbd33fe5cd948c05934af997b36e0b6ca6fdf43afa234cf222e1
   thor (1.5.0) sha256=e3a9e55fe857e44859ce104a84675ab6e8cd59c650a49106a05f55f136425e73
   timeout (0.6.0) sha256=6d722ad619f96ee383a0c557ec6eb8c4ecb08af3af62098a0be5057bf00de1af
