@@ -1,5 +1,11 @@
 # frozen_string_literal: true
 
+class ThrowingFormatter
+  def call(_data)
+    raise "bogus"
+  end
+end
+
 RSpec.describe Heavylog do
   let(:buffer) { StringIO.new }
   let(:logger) { ActiveSupport::Logger.new(buffer) }
@@ -66,12 +72,6 @@ RSpec.describe Heavylog do
     line = JSON.parse(buffer.string)
 
     expect(line["hostname"]).to eq("example.org")
-  end
-
-  class ThrowingFormatter
-    def call(_data)
-      raise "bogus"
-    end
   end
 
   it "doesn't bubble up exceptions in formatters" do

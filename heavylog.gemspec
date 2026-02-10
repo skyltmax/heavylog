@@ -1,39 +1,42 @@
 # frozen_string_literal: true
 
-lib = File.expand_path("lib", __dir__)
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+$LOAD_PATH.push File.expand_path("./lib", __dir__)
 require "heavylog/version"
 
-Gem::Specification.new do |spec|
-  spec.name          = "heavylog"
-  spec.version       = Heavylog::VERSION
-  spec.authors       = ["Kristjan Rang"]
-  spec.email         = ["mail@rang.ee"]
+Gem::Specification.new do |s|
+  s.name      = "heavylog"
+  s.version   = Heavylog::VERSION
+  s.authors   = ["Signmax AB"]
+  s.email     = ["team@signomatic.ee"]
+  s.platform  = Gem::Platform::RUBY
 
-  spec.summary       = "Format all Rails logging per request"
-  spec.description   = "Format all Rails logging per request"
-  spec.homepage      = "https://github.com/krisrang/heavylog"
-  spec.license       = "MIT"
+  s.required_ruby_version = ">= 3.4"
+  s.required_rubygems_version = ">= 3.2"
 
-  spec.files         = `git ls-files -z`.split("\x0").reject do |f|
+  s.summary       = "Format all Rails logging per request"
+  s.homepage      = "https://github.com/skyltmax/heavylog"
+  s.license       = "MIT"
+
+  s.metadata      = {
+    "homepage_uri"    => "https://github.com/skyltmax/heavylog#readme",
+    "source_code_uri" => "https://github.com/skyltmax/heavylog",
+    "bug_tracker_uri" => "https://github.com/skyltmax/heavylog/issues",
+  }
+
+  s.files = `git ls-files -z`.split("\x0").reject do |f|
     f.match(%r{^(test|spec|features|.vscode)/})
   end
-  spec.bindir        = "exe"
-  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
-  spec.require_paths = ["lib"]
+  s.require_paths = ["lib"]
 
-  spec.add_development_dependency "bundler", "~> 2.0"
-  spec.add_development_dependency "rake", "~> 13.0"
-  spec.add_development_dependency "rspec", "~> 3.0"
-  spec.add_development_dependency "rubocop", "~> 0.71"
-  spec.add_development_dependency "rubocop-performance", "~> 1.5.2"
-  spec.add_development_dependency "simplecov", "~> 0.21.2"
-  spec.add_development_dependency "simplecov-cobertura", "~> 2.1.0"
-  spec.add_development_dependency "sidekiq", ">= 6.0"
-  spec.add_development_dependency "solargraph"
+  s.add_development_dependency "rake", "~> 13.0"
+  s.add_development_dependency "rspec", "~> 3.0"
+  s.add_development_dependency "rubocop", "< 1.84.1"
+  s.add_development_dependency "sidekiq", ">= 6.0"
+  s.add_development_dependency "skyltmax_config"
 
-  spec.add_runtime_dependency "actionpack",    ">= 5"
-  spec.add_runtime_dependency "activesupport", ">= 5"
-  spec.add_runtime_dependency "railties",      ">= 5"
-  spec.add_runtime_dependency "request_store", "~> 1.4"
+  s.add_dependency "actionpack", ">= 8.0", "< 8.2"
+  s.add_dependency "activerecord", ">= 8.0", "< 8.2"
+  s.add_dependency "activesupport", ">= 8.0", "< 8.2"
+  s.add_dependency "railties",      ">= 8.0", "< 8.2"
+  s.add_dependency "request_store", "~> 1.4"
 end

@@ -16,7 +16,7 @@ module Heavylog
   module_function
 
   TRUNCATION = "[TRUNCATED]"
-  ANSI_REGEX = /\e\[(\d+)m/.freeze
+  ANSI_REGEX = /\e\[(\d+)m/
 
   mattr_accessor :logger, :application, :formatter, :log_level, :ignore_path
 
@@ -81,7 +81,7 @@ module Heavylog
     custom_payload_method = config.custom_payload_method
 
     klass.send(:define_method, :append_info_to_payload) do |payload|
-      append_payload_method.bind(self).call(payload)
+      append_payload_method.bind_call(self, payload)
       payload[:custom_payload] = custom_payload_method.call(self)
     end
   end
@@ -148,7 +148,7 @@ module Heavylog
     formatted = Heavylog.formatter.call(request.transform_keys(&:to_s))
     Heavylog.logger.send(Heavylog.log_level, formatted)
   rescue StandardError => e
-    config.error_handler&.(e)
+    config.error_handler&.call(e)
   end
 
   def finish_sidekiq

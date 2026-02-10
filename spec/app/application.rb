@@ -2,12 +2,12 @@
 
 module Heavylog
   class Application < Rails::Application
-    config.load_defaults 6.1
+    config.load_defaults 8.1
     config.eager_load = false
-    config.cache_classes = true
+    config.enable_reloading = false
     config.consider_all_requests_local = true
     config.action_controller.perform_caching = false
-    config.action_dispatch.show_exceptions = true
+    config.action_dispatch.show_exceptions = :all
     config.action_controller.allow_forgery_protection = false
     config.active_support.deprecation = :stderr
     config.hosts.clear
@@ -28,7 +28,7 @@ class TestController < ActionController::Base
   end
 
   def redirect_action
-    redirect_to "http://redirected.com"
+    redirect_to "http://redirected.com", allow_other_host: true
   end
 
   def raise_action

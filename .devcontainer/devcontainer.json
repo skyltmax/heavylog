@@ -1,0 +1,17 @@
+{
+  "name": "Heavylog",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/heavylog",
+  "containerEnv": {
+    "RUBY_YJIT_ENABLE": "true",
+    "MALLOC_ARENA_MAX": "2",
+    "BUNDLE_JOBS": "8",
+    "DEVC_WORKSPACE": "${containerWorkspaceFolder}"
+  },
+  "mounts": [
+    "source=bundle,target=/usr/local/bundle,type=volume",
+    "source=rubylsp,target=${containerWorkspaceFolder}/.ruby-lsp,type=volume"
+  ],
+  "onCreateCommand": ".devcontainer/boot.sh"
+}

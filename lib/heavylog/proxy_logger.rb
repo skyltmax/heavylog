@@ -6,8 +6,8 @@ module Heavylog
       super(nil)
     end
 
-    def add(severity, message=nil, progname=nil, &block)
-      Heavylog.log(severity, message, progname, &block)
+    def add(severity, message=nil, progname=nil, &)
+      Heavylog.log(severity, message, progname, &)
     end
 
     def loggable?

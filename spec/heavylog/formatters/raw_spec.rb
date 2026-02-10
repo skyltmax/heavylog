@@ -27,6 +27,6 @@ RSpec.describe Heavylog::Formatters::Raw do
     line = buffer.string
 
     expect(line).to include("logger from action")
-    expect(line).to include("\"view_runtime\"=>")
+    expect(line).to include("\"view_runtime\" =>")
   end
 end

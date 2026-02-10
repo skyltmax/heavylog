@@ -1,0 +1,183 @@
+name: Publish release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  packages: write # required for GitHub Packages publishing
+  id-token: write # required for trusted publishing
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify versions match tag
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.release.prerelease }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Extract versions
+        id: versions
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          # Allow tags like v1.2.3 or 1.2.3
+          TAG_NO_V=${TAG#v}
+          echo "tag=${TAG_NO_V}" >> "$GITHUB_OUTPUT"
+
+          # package.json version via Node (works regardless of type: module)
+          PKG_VER=$(node -e "console.log(JSON.parse(require('fs').readFileSync('package.json','utf8')).version)")
+          echo "npm=${PKG_VER}" >> "$GITHUB_OUTPUT"
+
+          # version.rb version
+          GEM_VER=$(sed -n 's/^[[:space:]]*VERSION[[:space:]]*=[[:space:]]*"\(.*\)"[[:space:]]*$/\1/p' lib/heavylog/version.rb)
+          echo "gem=${GEM_VER}" >> "$GITHUB_OUTPUT"
+
+          echo "Tag:        $TAG_NO_V"
+          echo "npm:        $PKG_VER"
+          echo "RubyGems:   $GEM_VER"
+
+          if [[ "$PKG_VER" != "$TAG_NO_V" || "$GEM_VER" != "$TAG_NO_V" ]]; then
+            echo "Version mismatch: tag=$TAG_NO_V, npm=$PKG_VER, gem=$GEM_VER" >&2
+            exit 1
+          fi
+  verify_prerelease:
+    name: Verify prerelease tag matches npm version
+    runs-on: ubuntu-latest
+    if: github.event.release.prerelease
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Verify tag is a valid prerelease version
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          TAG_NO_V=${TAG#v}
+
+          # Ensure the tag contains a prerelease identifier (e.g. 0.0.13-beta.1)
+          if [[ ! "$TAG_NO_V" =~ ^[0-9]+\.[0-9]+\.[0-9]+-.+ ]]; then
+            echo "Tag '$TAG_NO_V' does not look like a valid prerelease version" >&2
+            exit 1
+          fi
+
+          # Verify base version (before the hyphen) matches package.json
+          BASE_VERSION=${TAG_NO_V%%-*}
+          PKG_VER=$(node -e "console.log(JSON.parse(require('fs').readFileSync('package.json','utf8')).version)")
+
+          echo "Tag:          $TAG_NO_V"
+          echo "Base version: $BASE_VERSION"
+          echo "npm version:  $PKG_VER"
+
+          if [[ "$PKG_VER" != "$BASE_VERSION" ]]; then
+            echo "Base version mismatch: tag base=$BASE_VERSION, npm=$PKG_VER" >&2
+            exit 1
+          fi
+  publish_npm:
+    name: Publish npm package
+    needs: verify
+    if: ${{ !github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+      - name: Ensure modern npm for OIDC trusted publishing
+        run: npm install -g npm@latest
+      - name: Publish package
+        run: npm publish --access public
+  publish_npm_canary:
+    name: Publish npm canary
+    needs: verify_prerelease
+    if: github.event.release.prerelease
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+      - name: Ensure modern npm for OIDC trusted publishing
+        run: npm install -g npm@latest
+      - name: Set canary version from tag
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          echo "Setting canary version: $TAG_VERSION"
+          npm version "$TAG_VERSION" --no-git-tag-version
+      - name: Publish canary
+        run: npm publish --tag canary --access public
+  publish_gem:
+    name: Publish Ruby gem
+    needs: verify
+    if: ${{ !github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+          ruby-version: "3.4"
+      - name: Build gem package
+        run: |
+          rm -f heavylog-*.gem
+          gem build heavylog.gemspec
+      - name: Configure trusted publishing credentials
+        uses: rubygems/configure-rubygems-credentials@v1.0.0
+      - name: Publish gem
+        run: |
+          GEM_FILE=$(ls -t heavylog-*.gem 2>/dev/null | head -n 1 || true)
+          if [ -z "$GEM_FILE" ]; then
+            echo "Gem file not found" >&2
+            exit 1
+          fi
+
+          gem push "$GEM_FILE"
+  publish_gem_prerelease:
+    name: Publish prerelease gem
+    needs: verify_prerelease
+    if: github.event.release.prerelease
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: false
+          ruby-version: "3.4"
+      - name: Install dependencies
+        run: bundle install
+      - name: Set prerelease version from tag
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          # Ruby gem versions use dots instead of hyphens (e.g. 0.0.12.beta.1)
+          GEM_VERSION="${TAG_VERSION//-/.}"
+
+          echo "Setting prerelease version: $GEM_VERSION"
+          sed -i "s/VERSION = \".*\"/VERSION = \"${GEM_VERSION}\"/" lib/heavylog/version.rb
+          cat lib/heavylog/version.rb
+      - name: Update Gemfile.lock
+        run: bundle install
+      - name: Build prerelease gem package
+        run: |
+          rm -f heavylog-*.gem
+          gem build heavylog.gemspec
+      - name: Configure trusted publishing credentials
+        uses: rubygems/configure-rubygems-credentials@v1.0.0
+      - name: Publish prerelease gem
+        run: |
+          GEM_FILE=$(ls -t heavylog-*.gem 2>/dev/null | head -n 1 || true)
+          if [ -z "$GEM_FILE" ]; then
+            echo "Gem file not found" >&2
+            exit 1
+          fi
+
+          gem push "$GEM_FILE"
