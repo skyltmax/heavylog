@@ -2,6 +2,8 @@
 
 ### Unreleased
 
+### [0.1.1] - 2026-02-11
+
 - feat: Karafka consumer logging.
 - build: Github actions automatic publishing.
 
