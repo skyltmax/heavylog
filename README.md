@@ -78,7 +78,16 @@ Set `log_sidekiq` to `true` if you want to automatically log Sidekiq job runs to
 {"request_id":"fb2c3798e2634011d670f753","request_start":"2021-04-25T16:00:53+00:00","ip":"127.0.0.1","messages":"  Order Load (1.8ms)  SELECT \"orders\".* FROM \"orders\" WHERE \"orders\".\"id\" = $1 LIMIT $2  [[\"id\", 109987473], [\"LIMIT\", 1]]\n  Customer Load (1.7ms)  SELECT \"customers\".* FROM \"customers\" WHERE \"customers\".\"id\" = $1 LIMIT $2  [[\"id\", 1027337], [\"LIMIT\", 1]]\n","controller":"SidekiqLogger","action":"MailPrepaidCheckupsJob","args":"[109987473]"}
 ```
 
-Sidekiq job runs go into the same file as regular request logs but have controller set to `SidekiqLogger` and action to the name of the Job.
+Sidekiq job runs go into the same file as regular request logs but have controller set to `SidekiqLogger` and action to the name of the job.
+
+### Karafka logging
+
+Subclass your `ApplicationConsumer` class to `Heavylog::Adapters::KarafkaConsumer` if you want to automatically log Karafka consumer runs to the same file. Example with JSON formatter:
+```
+{"@timestamp":"2026-02-11T10:31:21+00:00","message":"  main (5.4ms)  SELECT 1\n  ↳ /workspaces/skyltmax/api/app/consumers/click_house_ingest_consumer.rb:9:in 'ClickHouseIngestConsumer#consume'\n  main (71.7ms)  INSERT INTO admin_recent_visits (ts, admin_id, section) SETTINGS async_insert=1, wait_for_async_insert=1 FORMAT CSV\n  ↳ /workspaces/skyltmax/api/app/consumers/click_house_ingest_consumer.rb:24:in 'block in ClickHouseIngestConsumer#insert_rows'\n[d354a60d632b] Consume job for AdminRecentVisitIngestConsumer on sm-dev-admin-recent-visits-0 finished in 131.71 ms\n","http":{"request":{"id":"640cdbee-9685-4a48-a1b1-ddf2e34d10bb"}},"source":{"address":"127.0.0.1","ip":"127.0.0.1"},"heavylog":{"controller":"KarafkaLogger","action":"AdminRecentVisitIngestConsumer","args":"topic=sm-dev-admin-recent-visits partition=0 messages=2"},"event":{"module":"heavylog","category":"web","dataset":"heavylog.karafka"},"url":{"path":null}}
+```
+
+Karafka consumer runs go into the same file as regular request logs but have controller set to `KarafkaLogger` and action to the name of the consumer.
 
 ### JSON formatter
 
@@ -101,19 +110,19 @@ end
 
 ## Publishing
 
-This repo publishes a Ruby gem (heavylog) whenever a GitHub Release is published. A manual run is also available.
+This repo publishes a Ruby gem (heavylog) whenever a GitHub Release is published.
 
 Setup (one-time):
 
-- In rubygems and npmjs configure trusted publishing.
-- Ensure package and gem versions match. The workflow verifies that the git tag version equals both versions.
+- In rubygems configure trusted publishing.
+- Ensure gem version matches. The workflow verifies that the git tag version equals gem version.
 
 How to release:
 
 1. Update version:
    - `lib/heavylog/version.rb`: `VERSION = "x.y.z"`
 2. Commit and push changes.
-3. Create a Git tag vX.Y.Z and a GitHub Release for that tag (or run the "Publish release" workflow with that ref).
+3. Create a Git tag vX.Y.Z and a GitHub Release for that tag.
 
 What the workflow does:
 
