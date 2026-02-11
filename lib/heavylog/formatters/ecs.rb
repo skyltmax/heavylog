@@ -37,7 +37,15 @@ module Heavylog
         dig_set(data, %w[event category], "web")
 
         unless data.dig("event", "dataset")
-          value = data.dig("heavylog", "controller") == "SidekiqLogger" ? "heavylog.sidekiq" : "heavylog.rails"
+          value = case data.dig("heavylog", "controller")
+                  when "SidekiqLogger"
+                    "heavylog.sidekiq"
+                  when "KarafkaLogger"
+                    "heavylog.karafka"
+                  else
+                    "heavylog.rails"
+                  end
+
           dig_set(data, %w[event dataset], value)
         end
 

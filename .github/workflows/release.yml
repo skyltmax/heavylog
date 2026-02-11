@@ -71,43 +71,6 @@ jobs:
             echo "Version mismatch: tag base=$BASE_VERSION, gem=$GEM_VER" >&2
             exit 1
           fi
-  publish_npm:
-    name: Publish npm package
-    needs: verify
-    if: ${{ !github.event.release.prerelease }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          registry-url: "https://registry.npmjs.org"
-      - name: Ensure modern npm for OIDC trusted publishing
-        run: npm install -g npm@latest
-      - name: Publish package
-        run: npm publish --access public
-  publish_npm_canary:
-    name: Publish npm canary
-    needs: verify_prerelease
-    if: github.event.release.prerelease
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          registry-url: "https://registry.npmjs.org"
-      - name: Ensure modern npm for OIDC trusted publishing
-        run: npm install -g npm@latest
-      - name: Set canary version from tag
-        run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
-          echo "Setting canary version: $TAG_VERSION"
-          npm version "$TAG_VERSION" --no-git-tag-version
-      - name: Publish canary
-        run: npm publish --tag canary --access public
   publish_gem:
     name: Publish Ruby gem
     needs: verify

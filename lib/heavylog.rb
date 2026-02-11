@@ -9,8 +9,7 @@ require "heavylog/middleware"
 require "heavylog/ordered_options"
 require "heavylog/request_logger"
 require "heavylog/proxy_logger"
-require "heavylog/sidekiq_logger"
-require "heavylog/sidekiq_exception_handler"
+require "heavylog/adapters"
 
 module Heavylog
   module_function
@@ -61,9 +60,9 @@ module Heavylog
     return unless config.log_sidekiq
 
     Sidekiq.configure_server do |config|
-      config[:job_logger] = SidekiqLogger
+      config[:job_logger] = Adapters::SidekiqLogger
 
-      config.error_handlers << SidekiqExceptionHandler.new
+      config.error_handlers << Adapters::SidekiqExceptionHandler.new
     end
   end
 
@@ -116,22 +115,6 @@ module Heavylog
     end
   end
 
-  def log_sidekiq(jid, klass, args)
-    return unless config.enabled
-
-    RequestStore.store[:heavylog_request_id] = jid
-    RequestStore.store[:heavylog_request_start] = Time.now.iso8601
-    RequestStore.store[:heavylog_request_ip] = "127.0.0.1"
-
-    RequestStore.store[:heavylog_request_data] = {
-      controller: "SidekiqLogger",
-      action:     klass,
-      args:       args.to_s,
-    }
-
-    RequestStore.store[:heavylog_buffer] ||= StringIO.new
-  end
-
   def finish
     return unless config.enabled
 
@@ -151,9 +134,29 @@ module Heavylog
     config.error_handler&.call(e)
   end
 
-  def finish_sidekiq
+  def log_job(jid, controller, klass, args)
+    return unless config.enabled
+
+    RequestStore.store[:heavylog_request_id] = jid
+    RequestStore.store[:heavylog_request_start] = Time.now.iso8601
+    RequestStore.store[:heavylog_request_ip] = "127.0.0.1"
+
+    RequestStore.store[:heavylog_request_data] = {
+      controller: controller,
+      action:     klass,
+      args:       args.to_s,
+    }
+
+    RequestStore.store[:heavylog_buffer] ||= StringIO.new
+  end
+
+  def finish_job
     finish
-    RequestStore.store[:heavylog_buffer] = nil
+    RequestStore.clear!
+  end
+
+  def request_id
+    RequestStore.store[:heavylog_request_id]
   end
 
   def config
